@@ -5,12 +5,15 @@ Every reader exposes:
     fill_details(board, job)          -> loads the description when the list lacks it
 """
 import hashlib
+import html
+import json
+import re
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from urllib.parse import quote
 
-from .http import request_json
+from .http import request_json, request_text
 from .text import html_to_text
 
 WORKDAY_US_ID = "bc33aa3152ec42d4995f4791a106ed09"
@@ -369,7 +372,173 @@ class Oracle:
         job.employment_type = d.get("JobSchedule") or ""
 
 
+# ------------------------------------------------------------------------ Jibe
+
+class Jibe:
+    """iCIMS career sites built on Jibe. board is the careers host, for example
+    'careers.jhuapl.edu'. Results come newest first and include the description.
+    """
+    name = "jibe"
+    PAGE = 100
+
+    def list_jobs(self, board, cstate, options):
+        keyword = quote(options.get("jibe_search_text", "mechanical"))
+        seen = cstate.get("seen", {})
+        first_scan = not cstate.get("baseline_done")
+        jobs, page = [], 1
+        while True:
+            data = request_json(
+                f"https://{board}/api/jobs?page={page}&limit={self.PAGE}&keywords={keyword}"
+                "&sortBy=posted_date&descending=true&internal=false"
+            ).data
+            rows = [r.get("data") or {} for r in data.get("jobs") or []]
+            for r in rows:
+                parts = [r.get("description"), r.get("responsibilities"), r.get("qualifications")]
+                place = ", ".join(x for x in (r.get("city"), r.get("state")) if x)
+                jobs.append(Job(
+                    id=str(r.get("slug") or r.get("req_id")),
+                    title=(r.get("title") or "").strip(),
+                    url=f"https://{board}/jobs/{r.get('slug')}?lang=en-us",
+                    apply_url=r.get("apply_url") or "",
+                    location=place or r.get("location_name") or "",
+                    country=r.get("country_code") or r.get("country") or "",
+                    employment_type=(r.get("employment_type") or "").replace("_", " "),
+                    posted=(r.get("posted_date") or "")[:10],
+                    description="\n".join(html_to_text(p) for p in parts if p),
+                ))
+            page_all_new = bool(rows) and all(str(r.get("slug")) not in seen for r in rows)
+            total = data.get("totalCount") or 0
+            if not rows or page * self.PAGE >= total or page >= 30:
+                break
+            if not first_scan and not page_all_new:
+                break
+            page += 1
+        return Listing(jobs)
+
+    def fill_details(self, board, job):
+        pass
+
+
+# ---------------------------------------------------------------- ClearCompany
+
+class ClearCompany:
+    """board is the hrmdirect.com subdomain, for example 'firefly'."""
+    name = "clearcompany"
+    _ITEM = re.compile(r"<item>(.*?)</item>", re.S)
+    _LOCATION = re.compile(r"Location:\s*</t[dh]>\s*<t[dh][^>]*>(.*?)</t[dh]>", re.S | re.I)
+
+    @staticmethod
+    def _tag(item, name):
+        m = re.search(rf"<{name}>(.*?)</{name}>", item, re.S)
+        return html.unescape(m.group(1)).strip() if m else ""
+
+    def list_jobs(self, board, cstate, options):
+        feed = request_text(f"https://{quote(board)}.hrmdirect.com/employment/rss.php?search=true")
+        jobs = []
+        for item in self._ITEM.findall(feed):
+            link = self._tag(item, "link").replace("http://", "https://")
+            req = re.search(r"req=(\d+)", link)
+            if not req:
+                continue
+            jobs.append(Job(
+                id=req.group(1),
+                title=self._tag(item, "title"),
+                url=link,
+                posted=self._tag(item, "pubDate")[5:16],
+                needs_details=True,
+            ))
+        if not jobs and "<rss" not in feed:
+            raise ValueError("the job feed did not return a job list")
+        return Listing(jobs)
+
+    def fill_details(self, board, job):
+        page = request_text(job.url)
+        start = page.find('class="jobDesc"')
+        if start < 0:
+            raise ValueError(f"no description found for job {job.id}")
+        job.description = html_to_text(page[start - 5: start + 30000].split(">", 1)[1])
+        location = self._LOCATION.search(page)
+        if location:
+            job.location = html_to_text(location.group(1))
+
+
+# --------------------------------------------------------------------- Radancy
+
+class Radancy:
+    """Career sites built by Radancy (TalentBrew). board is the careers host, for
+    example 'careers.l3harris.com'. Like Workday, results are crawled in full
+    only when the first page or the result count changed, and once an hour.
+    """
+    name = "radancy"
+    PAGE = 100
+    _ITEM = re.compile(
+        r'<a[^>]+href="(/[^"]*?/job/[^"]+)"[^>]*data-job-id="(\d+)"[^>]*>(.*?)</a>', re.S
+    )
+    _TITLE = re.compile(r"<h2[^>]*>(.*?)</h2>", re.S)
+    _LOCATION = re.compile(r'class="[^"]*job-location[^"]*"[^>]*>(.*?)</span>', re.S)
+    _PAGES = re.compile(r'data-total-pages="(\d+)"')
+    _TOTAL = re.compile(r'data-total-results="(\d+)"')
+    _JSON_LD = re.compile(r'<script type="application/ld\+json">(.*?)</script>', re.S)
+
+    def _page(self, board, keyword, page):
+        url = (
+            f"https://{board}/en/search-jobs/results?ActiveFacetID=0&CurrentPage={page}"
+            f"&RecordsPerPage={self.PAGE}&Distance=50&RadiusUnitType=0&Keywords={quote(keyword)}"
+            "&Location=&ShowRadius=False&IsPagination=False&CustomFacetName=&FacetTerm=&FacetType=0"
+            "&SearchResultsModuleName=Search+Results&SearchFiltersModuleName=Search+Filters"
+            "&SortCriteria=0&SortDirection=0&SearchType=5&PostalCode=&ResultsType=0"
+            "&fc=&fl=&fcf=&afc=&afl=&afcf="
+        )
+        return request_json(url).data.get("results") or ""
+
+    def list_jobs(self, board, cstate, options):
+        keyword = options.get("radancy_search_text", "mechanical")
+        first = self._page(board, keyword, 1)
+        items = self._ITEM.findall(first)
+        total = self._TOTAL.search(first)
+        pages = self._PAGES.search(first)
+        digest = hashlib.sha1("|".join(i[1] for i in items).encode()).hexdigest()[:12]
+        signature = f"{total.group(1) if total else len(items)}:{digest}"
+        now = int(time.time())
+        recent_crawl = now - cstate.get("wd_full_at", 0) < WORKDAY_FULL_CRAWL_SECONDS
+        if signature == cstate.get("wd_sig") and recent_crawl:
+            return None
+
+        for page in range(2, min(int(pages.group(1)) if pages else 1, 30) + 1):
+            items.extend(self._ITEM.findall(self._page(board, keyword, page)))
+
+        jobs, seen_ids = [], set()
+        for href, job_id, inner in items:
+            if job_id in seen_ids:
+                continue
+            seen_ids.add(job_id)
+            title = self._TITLE.search(inner)
+            location = self._LOCATION.search(inner)
+            jobs.append(Job(
+                id=job_id,
+                title=html_to_text(title.group(1)) if title else "",
+                url=f"https://{board}{href}",
+                location=html_to_text(location.group(1)) if location else "",
+                needs_details=True,
+            ))
+        return Listing(jobs, {"wd_sig": signature, "wd_full_at": now})
+
+    def fill_details(self, board, job):
+        page = request_text(job.url)
+        for block in self._JSON_LD.findall(page):
+            try:
+                data = json.loads(block, strict=False)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(data, dict) and data.get("@type") == "JobPosting":
+                job.description = html_to_text(data.get("description"))
+                job.posted = data.get("datePosted") or job.posted
+                return
+        raise ValueError(f"no description found for job {job.id}")
+
+
 READERS = {
     r.name: r
-    for r in (Greenhouse(), Lever(), Ashby(), Workday(), SmartRecruiters(), Oracle())
+    for r in (Greenhouse(), Lever(), Ashby(), Workday(), SmartRecruiters(), Oracle(),
+              Jibe(), ClearCompany(), Radancy())
 }

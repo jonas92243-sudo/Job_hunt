@@ -74,7 +74,42 @@ name = "Axiom Space"
 ats = "workday"
 board = "axiomspace/wd5/External_Career_Site"
 
+[[company]]
+name = "Firefly Aerospace"
+ats = "clearcompany"
+board = "firefly"
+
+[[company]]
+name = "Vantor"
+ats = "workday"
+board = "maxar/wd1/Vantor"
+
 # ------------------------------------------------------- defense and aviation
+
+[[company]]
+name = "L3Harris"
+ats = "radancy"
+board = "careers.l3harris.com"
+
+[[company]]
+name = "Leidos"
+ats = "workday"
+board = "leidos/wd5/External"
+
+[[company]]
+name = "Johns Hopkins APL"
+ats = "jibe"
+board = "careers.jhuapl.edu"
+
+[[company]]
+name = "Stratolaunch"
+ats = "greenhouse"
+board = "stratolaunch"
+
+[[company]]
+name = "Wing"
+ats = "greenhouse"
+board = "wing"
 
 [[company]]
 name = "Anduril"
@@ -217,6 +252,18 @@ board = "kla/wd1/Search"
 name = "Verkada"
 ats = "greenhouse"
 board = "verkada"
+
+[[company]]
+name = "ASML"
+ats = "workday"
+board = "asml/wd3/asmlext1"
+
+# ----------------------------------------------------------------------- other
+
+[[company]]
+name = "Emerson"
+ats = "oracle"
+board = "hdjq.fa.us2.oraclecloud.com/CX_1"
 
 # -------------------------------------------------------------------- vehicles
 

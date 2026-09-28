@@ -10,13 +10,13 @@ from dataclasses import dataclass
 # ---------------------------------------------------------------- title rules
 
 NOT_FULL_TIME_TITLE = re.compile(
-    r"\b(intern(ship)?s?|co-?ops?|part[- ]time|temporary|temp|seasonal|contractor|contract|"
+    r"\b(intern(ship)?s?|co[- ]?ops?|part[- ]time|temporary|temp|seasonal|contractor|contract|"
     r"apprentice(ship)?|fellowship|student|postdoc\w*|post-doc\w*|ph\.?d)\b",
     re.I,
 )
 
 SENIOR_TITLE = re.compile(
-    r"\b(senior|sr|staff|principal|lead|manager|mgr|director|head|chief|vp|vice president|"
+    r"\b(senior|sr|staff|principal|principle|lead|manager|mgr|director|head|chief|vp|vice president|"
     r"fellow|architect|supervisor|expert|distinguished|superintendent|president|experienced|"
     r"advanced|mid[- ]level|leader)\b",
     re.I,

@@ -50,6 +50,8 @@ title_exclude_keywords = [
 workday_search_text = "mechanical"
 smartrecruiters_search_text = "mechanical"
 oracle_search_text = "mechanical"
+jibe_search_text = "mechanical"
+radancy_search_text = "mechanical"
 workday_max_pages = 75
 
 [alerts]

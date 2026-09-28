@@ -44,6 +44,7 @@ class TitleTests(unittest.TestCase):
             "Mechanical Engineer Co-Op", "Principal Design Engineer", "Engineering Manager",
             "Lead Mechanical Engineer", "Mechanical Engineer III", "Mechanical Engineer (Contract)",
             "Insulation Design Engineer II, New Glenn Stage 2", "Summer 2027 Internship",
+            "Lab Operations Engineer Co op", "Principle Systems Engineer",
         ]:
             self.assertTrue(classify_title(title).startswith("reject"), title)
 

@@ -49,15 +49,24 @@ class Response:
         return self.status == 304
 
 
+def request_text(url, retries=2):
+    """GET a web page or feed and return it as text."""
+    return _request(url, None, None, retries, "text/html,application/xml,*/*", parse=False).data
+
+
 def request_json(url, body=None, etag=None, retries=2):
     """GET (or POST when body is given) and parse the JSON response.
 
     Passing the etag from an earlier response makes the server answer 304
     with no payload when nothing changed.
     """
+    return _request(url, body, etag, retries, "application/json", parse=True)
+
+
+def _request(url, body, etag, retries, accept, parse):
     headers = {
         "User-Agent": USER_AGENT,
-        "Accept": "application/json",
+        "Accept": accept,
         "Accept-Encoding": "gzip",
     }
     payload = None
@@ -76,7 +85,9 @@ def request_json(url, body=None, etag=None, retries=2):
                 raw = resp.read()
                 if resp.headers.get("Content-Encoding") == "gzip":
                     raw = gzip.decompress(raw)
-                data = json.loads(raw.decode("utf-8", "replace")) if raw else None
+                data = raw.decode("utf-8", "replace")
+                if parse:
+                    data = json.loads(data) if raw else None
                 return Response(resp.status, data, resp.headers.get("ETag"))
         except urllib.error.HTTPError as e:
             if e.code == 304:

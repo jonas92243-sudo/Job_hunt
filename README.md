@@ -55,11 +55,12 @@ git push
 You can also edit `companies.toml` directly on github.com. To stop watching a
 company, delete its block.
 
-Supported job systems: Greenhouse, Lever, Ashby, Workday, SmartRecruiters and
-Oracle. Companies on other systems cannot be scanned yet. Known examples:
-Celestica, Supermicro, L3Harris, Halliburton (SuccessFactors), Lockheed Martin,
-Eaton, Qualcomm (Eightfold), Bell and Textron Aviation (Taleo), Rivian, Joby,
-Garmin, Lennox (iCIMS), Tesla and Apple (their own sites).
+Supported job systems: Greenhouse, Lever, Ashby, Workday, SmartRecruiters,
+Oracle, ClearCompany, and career sites built on Jibe (iCIMS) or Radancy.
+Companies on other systems cannot be scanned yet. Known examples: Celestica,
+Supermicro, Halliburton (SuccessFactors), Lockheed Martin, Eaton, Qualcomm
+(Eightfold), Bell and Textron Aviation (Taleo), Tesla (blocks automated
+access) and Apple (its own site).
 
 ## Tuning what alerts
 

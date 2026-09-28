@@ -5,13 +5,15 @@
     python add_company.py "Company Name" --check    (look only, change nothing)
 
 The link is the page that lists the company's open jobs. Supported job systems:
-Greenhouse, Lever, Ashby, Workday, SmartRecruiters and Oracle.
+Greenhouse, Lever, Ashby, Workday, SmartRecruiters, Oracle, ClearCompany, and
+career sites built on Jibe (iCIMS) or Radancy.
 """
 import argparse
 import os
 import re
 import sys
 import tomllib
+from urllib.parse import urlsplit
 
 from scanner.ats import READERS
 from scanner.http import HttpError
@@ -25,6 +27,7 @@ URL_PATTERNS = [
     ("lever", re.compile(r"jobs\.lever\.co/([\w.-]+)", re.I)),
     ("ashby", re.compile(r"jobs\.ashbyhq\.com/([\w.%-]+)", re.I)),
     ("smartrecruiters", re.compile(r"(?:jobs|careers)\.smartrecruiters\.com/([\w-]+)", re.I)),
+    ("clearcompany", re.compile(r"([\w-]+)\.hrmdirect\.com", re.I)),
 ]
 WORKDAY_URL = re.compile(
     r"([\w-]+)\.(wd\d+)\.myworkdayjobs\.com/(?:[a-z]{2}-[A-Z]{2}/)?([\w-]+)", re.I
@@ -43,7 +46,9 @@ def from_url(url):
         m = pattern.search(url)
         if m:
             return [(ats, m.group(1))]
-    return []
+    # Jibe and Radancy sites run on the company's own web address, so try both.
+    host = urlsplit(url if "//" in url else f"https://{url}").netloc.lower()
+    return [("jibe", host), ("radancy", host)] if "." in host else []
 
 
 def guesses(name):
@@ -66,8 +71,10 @@ def probe(ats, board):
                                                                 "workday_search_text": "",
                                                                 "workday_max_pages": 1,
                                                                 "oracle_search_text": "",
+                                                                "jibe_search_text": "",
+                                                                "radancy_search_text": "",
                                                                 "smartrecruiters_search_text": ""})
-    except (HttpError, OSError, ValueError, KeyError, AttributeError):
+    except (HttpError, OSError, ValueError, KeyError, AttributeError, TypeError):
         return None
     return listing.jobs if listing and listing.jobs else None
 
@@ -84,9 +91,8 @@ def main():
     if args.url:
         candidates = from_url(args.url)
         if not candidates:
-            print("That link is not from a supported job system (Greenhouse, Lever, Ashby,")
-            print("Workday, SmartRecruiters, Oracle). Open the company's job list, click any")
-            print("job, and use the address of that page instead.")
+            print("That does not look like a web link. Use the address of the page that lists")
+            print("the company's open jobs.")
             return 1
     else:
         candidates = guesses(args.name)
@@ -96,8 +102,11 @@ def main():
         if jobs:
             break
     else:
-        print(f"No job board found for '{args.name}'.")
-        if not args.url:
+        print(f"No readable job board found for '{args.name}'.")
+        if args.url:
+            print("The company may use a job system the scanner cannot read. Try the address")
+            print("of one specific job posting instead, in case it lives on a different site.")
+        else:
             print("Try again with the link to the company's job listing page.")
         return 1
 
