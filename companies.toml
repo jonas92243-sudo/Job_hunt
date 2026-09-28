@@ -59,6 +59,21 @@ name = "Muon Space"
 ats = "greenhouse"
 board = "muonspace"
 
+[[company]]
+name = "Stoke Space"
+ats = "greenhouse"
+board = "stokespacetechnologies"
+
+[[company]]
+name = "Sierra Space"
+ats = "workday"
+board = "sierraspace/wd1/Sierra_Space_External_Career_Site"
+
+[[company]]
+name = "Axiom Space"
+ats = "workday"
+board = "axiomspace/wd5/External_Career_Site"
+
 # ------------------------------------------------------- defense and aviation
 
 [[company]]
@@ -82,6 +97,11 @@ ats = "lever"
 board = "hermeus"
 
 [[company]]
+name = "Castelion"
+ats = "greenhouse"
+board = "castelioncorporation"
+
+[[company]]
 name = "Epirus"
 ats = "greenhouse"
 board = "epirus"
@@ -100,6 +120,11 @@ board = "flyzipline"
 name = "Regent"
 ats = "ashby"
 board = "regent"
+
+[[company]]
+name = "Archer Aviation"
+ats = "greenhouse"
+board = "archer56"
 
 [[company]]
 name = "Boeing"
@@ -129,14 +154,29 @@ ats = "workday"
 board = "nvidia/wd5/NVIDIAExternalCareerSite"
 
 [[company]]
+name = "Dell Technologies"
+ats = "oracle"
+board = "enterpriseplatform.dell.com/careers"
+
+[[company]]
 name = "Hewlett Packard Enterprise"
 ats = "workday"
 board = "hpe/wd5/Jobsathpe"
 
 [[company]]
+name = "Vertiv"
+ats = "oracle"
+board = "egup.fa.us2.oraclecloud.com/CX"
+
+[[company]]
 name = "Jabil"
 ats = "workday"
 board = "jabil/wd5/Jabil_Careers"
+
+[[company]]
+name = "Flex"
+ats = "workday"
+board = "flextronics/wd1/Careers"
 
 [[company]]
 name = "Crusoe"
@@ -147,6 +187,11 @@ board = "crusoe"
 name = "xAI"
 ats = "greenhouse"
 board = "xai"
+
+[[company]]
+name = "Texas Instruments"
+ats = "oracle"
+board = "edbz.fa.us2.oraclecloud.com/CX"
 
 [[company]]
 name = "Intel"
@@ -173,37 +218,27 @@ name = "Verkada"
 ats = "greenhouse"
 board = "verkada"
 
-# ------------------------------------------------------- robotics and vehicles
+# -------------------------------------------------------------------- vehicles
 
 [[company]]
-name = "Apptronik"
-ats = "greenhouse"
-board = "apptronik"
+name = "Ford"
+ats = "oracle"
+board = "efds.fa.em5.oraclecloud.com/CX_1"
 
 [[company]]
-name = "Figure"
-ats = "greenhouse"
-board = "figureai"
-
-[[company]]
-name = "1X"
-ats = "ashby"
-board = "1x"
-
-[[company]]
-name = "Agility Robotics"
-ats = "greenhouse"
-board = "agilityrobotics"
-
-[[company]]
-name = "Boston Dynamics"
+name = "General Motors"
 ats = "workday"
-board = "bostondynamics/wd1/Boston_Dynamics"
+board = "generalmotors/wd5/Careers_GM"
 
 [[company]]
-name = "Neuralink"
+name = "Toyota North America"
+ats = "workday"
+board = "toyota/wd503/TMNA"
+
+[[company]]
+name = "Lucid Motors"
 ats = "greenhouse"
-board = "neuralink"
+board = "lucidmotors"
 
 [[company]]
 name = "Zoox"
@@ -219,237 +254,3 @@ board = "nuro"
 name = "Kodiak"
 ats = "greenhouse"
 board = "kodiak"
-
-[[company]]
-name = "Lucid Motors"
-ats = "greenhouse"
-board = "lucidmotors"
-
-[[company]]
-name = "General Motors"
-ats = "workday"
-board = "generalmotors/wd5/Careers_GM"
-
-# ------------------------------------------------ manufacturing and industrial
-
-[[company]]
-name = "Caterpillar"
-ats = "workday"
-board = "cat/wd5/CaterpillarCareers"
-
-[[company]]
-name = "Carrier"
-ats = "workday"
-board = "carrier/wd5/jobs"
-
-[[company]]
-name = "Wabtec"
-ats = "smartrecruiters"
-board = "Wabtec"
-
-[[company]]
-name = "Bosch"
-ats = "smartrecruiters"
-board = "BoschGroup"
-
-[[company]]
-name = "Baker Hughes"
-ats = "workday"
-board = "bakerhughes/wd5/BakerHughes"
-
-[[company]]
-name = "3M"
-ats = "workday"
-board = "3m/wd1/Search"
-
-[[company]]
-name = "Divergent"
-ats = "greenhouse"
-board = "divergent"
-
-[[company]]
-name = "Formlabs"
-ats = "greenhouse"
-board = "formlabs"
-
-[[company]]
-name = "Redwood Materials"
-ats = "greenhouse"
-board = "redwoodmaterials"
-
-# ------------------------------------------------------------ energy and medical
-
-[[company]]
-name = "Helion"
-ats = "ashby"
-board = "helion"
-
-[[company]]
-name = "Kairos Power"
-ats = "greenhouse"
-board = "kairospower"
-
-[[company]]
-name = "Oklo"
-ats = "greenhouse"
-board = "oklo"
-
-[[company]]
-name = "Stryker"
-ats = "workday"
-board = "stryker/wd1/StrykerCareers"
-
-[[company]]
-name = "Medtronic"
-ats = "workday"
-board = "medtronic/wd1/MedtronicCareers"
-
-# ------------------------------------------------------- more verified employers
-
-[[company]]
-name = "Dell Technologies"
-ats = "oracle"
-board = "enterpriseplatform.dell.com/careers"
-
-[[company]]
-name = "Texas Instruments"
-ats = "oracle"
-board = "edbz.fa.us2.oraclecloud.com/CX"
-
-[[company]]
-name = "Vertiv"
-ats = "oracle"
-board = "egup.fa.us2.oraclecloud.com/CX"
-
-[[company]]
-name = "Honeywell"
-ats = "oracle"
-board = "ibqbjb.fa.ocs.oraclecloud.com/Honeywell"
-
-[[company]]
-name = "Cummins"
-ats = "oracle"
-board = "fa-espx-saasfaprod1.fa.ocs.oraclecloud.com/CX_1"
-
-[[company]]
-name = "Emerson"
-ats = "oracle"
-board = "hdjq.fa.us2.oraclecloud.com/CX_1"
-
-[[company]]
-name = "Ford"
-ats = "oracle"
-board = "efds.fa.em5.oraclecloud.com/CX_1"
-
-[[company]]
-name = "Victaulic"
-ats = "workday"
-board = "victaulic/wd1/victaulic_careers"
-
-[[company]]
-name = "Toyota North America"
-ats = "workday"
-board = "toyota/wd503/TMNA"
-
-[[company]]
-name = "Trane Technologies"
-ats = "workday"
-board = "tranetechnologies/wd12/Trane_Technologies_Careers"
-
-[[company]]
-name = "Flex"
-ats = "workday"
-board = "flextronics/wd1/Careers"
-
-[[company]]
-name = "Sierra Space"
-ats = "workday"
-board = "sierraspace/wd1/Sierra_Space_External_Career_Site"
-
-[[company]]
-name = "Axiom Space"
-ats = "workday"
-board = "axiomspace/wd5/External_Career_Site"
-
-[[company]]
-name = "Stoke Space"
-ats = "greenhouse"
-board = "stokespacetechnologies"
-
-[[company]]
-name = "Castelion"
-ats = "greenhouse"
-board = "castelioncorporation"
-
-[[company]]
-name = "Archer Aviation"
-ats = "greenhouse"
-board = "archer56"
-
-[[company]]
-name = "Hadrian"
-ats = "ashby"
-board = "hadrian-automation"
-
-[[company]]
-name = "Commonwealth Fusion Systems"
-ats = "lever"
-board = "cfsenergy"
-
-[[company]]
-name = "Machina Labs"
-ats = "lever"
-board = "MachinaLabs"
-
-# ------------------------------------------------------------------------------
-# Verified boards that are switched off. Remove the # marks on a block to watch it.
-#
-# [[company]]
-# name = "Motorola Solutions"
-# ats = "workday"
-# board = "motorolasolutions/wd5/Careers"
-#
-# [[company]]
-# name = "Analog Devices"
-# ats = "workday"
-# board = "analogdevices/wd1/External"
-#
-# [[company]]
-# name = "Cisco"
-# ats = "workday"
-# board = "cisco/wd5/Cisco_Careers"
-#
-# [[company]]
-# name = "Leidos"
-# ats = "workday"
-# board = "leidos/wd5/External"
-#
-# [[company]]
-# name = "KBR"
-# ats = "workday"
-# board = "kbr/wd5/KBR_Careers"
-#
-# [[company]]
-# name = "Abbott"
-# ats = "workday"
-# board = "abbott/wd5/abbottcareers"
-#
-# [[company]]
-# name = "Procter & Gamble"
-# ats = "workday"
-# board = "pg/wd5/1000"
-#
-# [[company]]
-# name = "Continental"
-# ats = "smartrecruiters"
-# board = "Continental"
-#
-# [[company]]
-# name = "PsiQuantum"
-# ats = "greenhouse"
-# board = "psiquantum"
-#
-# [[company]]
-# name = "Lightmatter"
-# ats = "greenhouse"
-# board = "lightmatter"
