@@ -13,7 +13,7 @@ from .filters import evaluate, is_us_location, title_prefilter
 from .notify import Notifier, digest_messages, job_alert
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-FAILURE_ALERT_AT = 12   # consecutive failed scans (about an hour) before warning
+FAILURE_ALERT_AT = 3    # consecutive failed scans before warning
 
 
 @dataclass

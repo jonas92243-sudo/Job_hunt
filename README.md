@@ -8,8 +8,8 @@ message, with the apply link, as soon as a new posting appears that is:
 - located in the United States
 - asking for a bachelor's degree that a Mechanical Engineering graduate holds
 
-It runs on GitHub Actions every 5 minutes, so it keeps working while your
-computer is off.
+It runs on GitHub Actions once an hour, at 30 minutes past, so it keeps working
+while your computer is off.
 
 ## One-time setup
 
@@ -18,8 +18,7 @@ computer is off.
    Treat this URL like a password.
 2. **GitHub repository.** Create a free GitHub account, then a new **public**,
    empty repository (no README), for example `job-scanner`. Public repositories
-   get unlimited free Actions time; a private one would run out of free minutes
-   in about a week at this scan rate.
+   get unlimited free Actions time.
 3. **Add the secret.** In the repository: Settings > Secrets and variables >
    Actions > New repository secret. Name `DISCORD_WEBHOOK_URL`, value = the URL
    from step 1.
@@ -89,11 +88,13 @@ company. Tests: `python -m unittest discover -s tests`.
 
 ## How it behaves
 
-- **Speed.** A scan starts every 5 minutes. GitHub sometimes starts scheduled
-  runs late, so expect an alert 5 to 15 minutes after a job is posted.
+- **Speed.** A scan starts once an hour, at 30 minutes past. GitHub sometimes
+  starts scheduled runs late, so a job posted just after a scan can take a little
+  over an hour to alert. To scan more often, change the `cron` line in
+  `.github/workflows/scan.yml`.
 - **Daily check-in.** One "scanner is running" message per day around 9 AM
   Central. If it stops arriving, look at the Actions tab.
-- **Broken boards.** If a company's board fails for an hour, you get one
-  warning message. Companies do change job systems occasionally.
+- **Broken boards.** If a company's board fails three scans in a row, you get
+  one warning message. Companies do change job systems occasionally.
 - **Memory.** Seen jobs are stored on the repository's `state` branch. Deleting
   that branch makes the next scan behave like a first scan.
