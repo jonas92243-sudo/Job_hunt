@@ -1,0 +1,77 @@
+name: Scan job boards
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"   # every 5 minutes (GitHub may start runs a few minutes late)
+  workflow_dispatch:         # adds a "Run workflow" button for manual scans
+
+permissions:
+  contents: write
+
+# Never run two scans at once; a late scan waits for the one in progress.
+concurrency:
+  group: job-scan
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      # The list of already-seen jobs lives on its own "state" branch, holding a
+      # single commit that is replaced after every scan.
+      - name: Restore scan state
+        run: |
+          mkdir -p state
+          set +e
+          git ls-remote --exit-code --heads origin state > /dev/null
+          code=$?
+          set -e
+          if [ "$code" -eq 0 ]; then
+            git fetch --quiet --depth=1 origin state
+            git show FETCH_HEAD:seen.json > state/seen.json
+          elif [ "$code" -eq 2 ]; then
+            echo "No saved state yet: this is the first scan."
+          else
+            echo "Could not reach the repository to restore state."
+            exit 1
+          fi
+
+      - name: Scan
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: python3 -m scanner
+
+      - name: Save scan state
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          [ -s state/seen.json ] || exit 0
+          work="$(mktemp -d)"
+          cp state/seen.json "$work/seen.json"
+          cd "$work"
+          git init --quiet --initial-branch=state
+          git config user.name "job-scanner"
+          git config user.email "job-scanner@users.noreply.github.com"
+          git add seen.json
+          git commit --quiet -m "Scan state"
+          git push --quiet --force \
+            "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" state
+
+      # GitHub switches off scheduled workflows in repositories with no activity
+      # for 60 days, so make a small commit when the main branch has been quiet.
+      - name: Keep the schedule active
+        run: |
+          last=$(git log -1 --format=%ct)
+          now=$(date +%s)
+          if [ $(( (now - last) / 86400 )) -ge 45 ]; then
+            date -u +%F > .keepalive
+            git config user.name "job-scanner"
+            git config user.email "job-scanner@users.noreply.github.com"
+            git add .keepalive
+            git commit --quiet -m "Keep scheduled scans active"
+            git push --quiet
+          fi

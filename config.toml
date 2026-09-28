@@ -1,0 +1,63 @@
+# Settings for the job scanner. Lines starting with # are notes and are ignored.
+
+[filters]
+# Highest "years of experience required" that still counts as entry level.
+max_years_experience = 2
+
+# Alert on jobs that state no experience requirement at all (marked "Level unclear").
+include_unclear_level = true
+
+# Only alert on jobs located in the United States (remote U.S. roles included).
+us_only = true
+
+# Many new-grad postings ask for "a bachelor's degree in engineering or a related
+# field" without naming Mechanical Engineering. true = alert on those too when the
+# posting mentions mechanical work (the alert says which kind of match it was).
+# false = alert only when Mechanical Engineering is named as the degree.
+include_general_engineering_degree = true
+
+# For those general-degree postings only: the title must also contain one of these
+# words, so that an "Antenna Engineer" asking for any engineering degree is skipped.
+mechanical_title_keywords = [
+    "mechanical", "design engineer", "manufacturing", "structur", "thermal", "propulsion",
+    "mechanism", "fluid", "test engineer", "build engineer", "tooling", "reliability",
+    "product development", "production engineer", "process engineer", "hardware", "vehicle",
+    "packaging", "facilities", "launch", "mechatronic", "robotic", "stress", "dynamics",
+    "hvac", "piping", "cad", "rotational", "development program", "new grad", "graduate",
+    "early career", "project engineer", "quality engineer", "integration engineer",
+    "machine", "weld", "materials", "cooling", "engine",
+]
+
+# A job title must contain at least one of these words to be considered.
+title_require_keywords = [
+    "engineer", "mechanical", "designer", "technologist", "new grad", "graduate",
+    "rotational", "development program", "leadership program", "early career", "analyst",
+]
+
+# A job title containing any of these words is skipped.
+title_exclude_keywords = [
+    "software", "firmware", "electrical engineer", "electronics engineer", "data engineer",
+    "data scientist", "machine learning", "network", "cyber", "security engineer", "devops",
+    "full stack", "frontend", "backend", "sales", "technician", "recruit", "financial",
+    "business analyst", "systems administrator", "rf engineer", "fpga", "asic", "embedded",
+    "site reliability", "cloud", "web", "account", "marketing", "legal", "supply chain analyst",
+    "antenna", "avionics", "chemical engineer", "assembler", "welder", "machinist", "operator",
+    "mechanic ", "maintenance", "skillbridge",
+]
+
+[scan]
+# Search word sent to Workday and SmartRecruiters boards, which are too large to read whole.
+workday_search_text = "mechanical"
+smartrecruiters_search_text = "mechanical"
+oracle_search_text = "mechanical"
+workday_max_pages = 75
+
+[alerts]
+# When a company is scanned for the first time, send one summary of the matching
+# jobs that are already open. After that only new postings alert.
+baseline_digest = true
+baseline_digest_max = 25   # most jobs listed per company in that first summary
+
+# One "scanner is running" message per day, so silence never means it broke.
+daily_heartbeat = true
+heartbeat_hour_utc = 14   # 14:00 UTC is 9 AM Central (daylight time)
