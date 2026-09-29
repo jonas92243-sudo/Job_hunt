@@ -1,0 +1,32 @@
+name: Keep scanner running
+
+# Starts "Scan job boards" when no run of it is active: after a change is
+# uploaded, and whenever GitHub's scheduler fires as a safety net.
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Start the scanner if it is not running
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          active=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow scan.yml --limit 20 \
+            --json status --jq '[.[] | select(.status != "completed")] | length')
+          if [ "$active" -eq 0 ]; then
+            gh workflow run scan.yml --repo "$GITHUB_REPOSITORY" --ref main
+            echo "The scanner was not running. Started it."
+          else
+            echo "The scanner is already running."
+          fi

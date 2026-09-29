@@ -1,15 +1,16 @@
 name: Scan job boards
 
+# GitHub's own scheduler skipped most scheduled scans, so this workflow does not
+# use it. One run scans every 30 minutes for about five hours, then starts the
+# next run. "Keep scanner running" restarts the chain if it ever breaks.
 on:
-  schedule:
-    # Once an hour, at 30 minutes past (GitHub may start runs a few minutes late).
-    - cron: "30 * * * *"
-  workflow_dispatch:         # adds a "Run workflow" button for manual scans
+  workflow_dispatch:
 
 permissions:
   contents: write
+  actions: write
 
-# Never run two scans at once; a late scan waits for the one in progress.
+# Never run two scanners at once; a new run waits for the one in progress.
 concurrency:
   group: job-scan
   cancel-in-progress: false
@@ -17,50 +18,15 @@ concurrency:
 jobs:
   scan:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@v4
 
-      # The list of already-seen jobs lives on its own "state" branch, holding a
-      # single commit that is replaced after every scan.
-      - name: Restore scan state
-        run: |
-          mkdir -p state
-          set +e
-          git ls-remote --exit-code --heads origin state > /dev/null
-          code=$?
-          set -e
-          if [ "$code" -eq 0 ]; then
-            git fetch --quiet --depth=1 origin state
-            git show FETCH_HEAD:seen.json > state/seen.json
-          elif [ "$code" -eq 2 ]; then
-            echo "No saved state yet: this is the first scan."
-          else
-            echo "Could not reach the repository to restore state."
-            exit 1
-          fi
-
-      - name: Scan
+      - name: Scan every 30 minutes
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-        run: python3 -m scanner
-
-      - name: Save scan state
-        if: always()
-        env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          [ -s state/seen.json ] || exit 0
-          work="$(mktemp -d)"
-          cp state/seen.json "$work/seen.json"
-          cd "$work"
-          git init --quiet --initial-branch=state
-          git config user.name "job-scanner"
-          git config user.email "job-scanner@users.noreply.github.com"
-          git add seen.json
-          git commit --quiet -m "Scan state"
-          git push --quiet --force \
-            "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" state
+        run: bash scripts/scan_loop.sh
 
       # GitHub switches off scheduled workflows in repositories with no activity
       # for 60 days, so make a small commit when the main branch has been quiet.
@@ -74,5 +40,12 @@ jobs:
             git config user.email "job-scanner@users.noreply.github.com"
             git add .keepalive
             git commit --quiet -m "Keep scheduled scans active"
-            git push --quiet
+            git push --quiet origin HEAD:main
           fi
+
+      # Skipped when a step above failed or the run was cancelled, so a broken
+      # scanner cannot restart itself in a tight loop.
+      - name: Start the next run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run scan.yml --repo "$GITHUB_REPOSITORY" --ref main

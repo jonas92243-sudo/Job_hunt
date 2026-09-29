@@ -8,8 +8,8 @@ message, with the apply link, as soon as a new posting appears that is:
 - located in the United States
 - asking for a bachelor's degree that a Mechanical Engineering graduate holds
 
-It runs on GitHub Actions once an hour, at 30 minutes past, so it keeps working
-while your computer is off.
+It runs on GitHub Actions every 30 minutes, on the hour and the half hour, so it
+keeps working while your computer is off.
 
 ## One-time setup
 
@@ -31,10 +31,10 @@ while your computer is off.
    git remote add origin https://github.com/YOUR-USERNAME/job-scanner.git
    git push -u origin main
    ```
-5. **Start it.** In the repository: Actions > Scan job boards > Run workflow.
-   The first scan takes about 5 minutes and sends one summary per company of
-   the matching jobs that are already open. From then on only new postings
-   alert, and scans take under a minute.
+5. **Start it.** Uploading the code starts the scanner by itself. The first
+   scan takes about 5 minutes and sends one summary per company of the matching
+   jobs that are already open. From then on only new postings alert, and scans
+   take a minute or two.
 
 ## Adding and removing companies
 
@@ -88,10 +88,18 @@ company. Tests: `python -m unittest discover -s tests`.
 
 ## How it behaves
 
-- **Speed.** A scan starts once an hour, at 30 minutes past. GitHub sometimes
-  starts scheduled runs late, so a job posted just after a scan can take a little
-  over an hour to alert. To scan more often, change the `cron` line in
-  `.github/workflows/scan.yml`.
+- **Speed.** A scan starts at :00 and :30 of every hour, so a new posting alerts
+  within about 30 minutes. To change the pace, edit `INTERVAL` (in seconds) in
+  `scripts/scan_loop.sh`.
+- **How it stays running.** GitHub's own scheduler skipped most scheduled scans,
+  so the scanner does not rely on it. One run of "Scan job boards" scans every
+  30 minutes for about five hours, then starts the next run. "Keep scanner
+  running" restarts that chain if it ever breaks. In the Actions tab it is
+  normal to see one "Scan job boards" run in progress at all times.
+- **Changes.** Edits to `companies.toml` and `config.toml` are picked up at the
+  next scan; nothing needs restarting.
+- **Stopping it.** In the Actions tab, open each of the two workflows and choose
+  Disable workflow from the "..." menu, then cancel the run in progress.
 - **Daily check-in.** One "scanner is running" message per day around 9 AM
   Central. If it stops arriving, look at the Actions tab.
 - **Broken boards.** If a company's board fails three scans in a row, you get
