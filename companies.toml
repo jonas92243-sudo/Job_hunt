@@ -258,6 +258,11 @@ name = "ASML"
 ats = "workday"
 board = "asml/wd3/asmlext1"
 
+[[company]]
+name = "AMD"
+ats = "jibe"
+board = "careers.amd.com"
+
 # ----------------------------------------------------------------------- other
 
 [[company]]
