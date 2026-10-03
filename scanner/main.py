@@ -11,11 +11,15 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from . import state as state_store
 from .ats import READERS
+from .http import NotJobData
 from .filters import evaluate, is_us_location, title_prefilter
 from .notify import Notifier, digest_messages, job_alert
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-FAILURE_ALERT_AT = 3    # consecutive failed scans before warning
+# Consecutive failed scans before warning (six hours at two scans an hour). Job
+# sites go down for maintenance for an hour or two most weeks, which is not worth
+# a message: postings made meanwhile are picked up by the first scan that works.
+FAILURE_ALERT_AT = 12
 RECEIPT_ROWS = 400      # scans kept in the receipts file (about eight days)
 
 
@@ -56,7 +60,8 @@ def scan_company(company, cstate, config):
     try:
         listing = reader.list_jobs(company["board"], cstate, options)
     except Exception as e:  # one broken board must not stop the others
-        result.status, result.error = "error", f"{type(e).__name__}: {e}"
+        result.status = "error"
+        result.error = str(e) if isinstance(e, NotJobData) else f"{type(e).__name__}: {e}"
         return result
     if listing is None:
         result.status = "unchanged"
@@ -130,17 +135,26 @@ def deliver(result, cstate, notifier, config):
         cstate.update({k: v for k, v in result.markers.items() if v is not None})
 
 
-def track_failures(result, cstate, notifier):
+def track_failures(result, cstate):
+    """Count consecutive failures. True when this board has just earned a warning."""
     if result.status == "error":
         cstate["failures"] = cstate.get("failures", 0) + 1
-        if cstate["failures"] == FAILURE_ALERT_AT:
-            notifier.send(
-                f"⚠️ **{result.company['name']}** could not be scanned for "
-                f"{FAILURE_ALERT_AT} runs in a row ({result.error}). "
-                "Its job board address in companies.toml may have changed."
-            )
-    elif cstate.get("failures"):
+        return cstate["failures"] == FAILURE_ALERT_AT
+    if cstate.get("failures"):
         cstate["failures"] = 0
+    return False
+
+
+def warn_about_failures(newly_failing, notifier):
+    """One message covering every board that crossed the failure limit in this scan."""
+    if not newly_failing:
+        return
+    hours = FAILURE_ALERT_AT // 2
+    lines = [f"⚠️ {len(newly_failing)} job board(s) have not been readable for about {hours} hours:"]
+    lines += [f"• **{name}**: {error}" for name, error in newly_failing]
+    lines.append("If this continues, the company may have moved its job board and its entry "
+                 "in companies.toml needs updating.")
+    notifier.send("\n".join(lines))
 
 
 def record_scan(state, messages_sent, new_jobs, errors):
@@ -246,11 +260,12 @@ def main(argv=None):
             lambda c: scan_company(c, cstates[company_key(c)], config), companies
         ))
 
-    errors = []
+    errors, newly_failing = [], []
     for result in results:
         cstate = cstates[result.key]
         name = result.company["name"]
-        track_failures(result, cstate, status_notifier)
+        if track_failures(result, cstate):
+            newly_failing.append((name, result.error))
         if result.status == "error":
             errors.append(name)
             print(f"{name}: ERROR {result.error}")
@@ -268,6 +283,7 @@ def main(argv=None):
             for job, verdict in result.rejected:
                 print(f"    - {job.title} | {verdict.reason}")
 
+    warn_about_failures(newly_failing, status_notifier)
     if not args.company:
         record_scan(state, notifier.sent, sum(r.new for r in results), errors)
         heartbeat(state, status_notifier, config, len(companies), errors)

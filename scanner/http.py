@@ -38,6 +38,10 @@ class HttpError(Exception):
         self.url = url
 
 
+class NotJobData(Exception):
+    """The server answered, but not with the JSON a job board normally returns."""
+
+
 class Response:
     def __init__(self, status, data, etag):
         self.status = status
@@ -105,7 +109,11 @@ def _request(url, body, etag, retries, accept, parse):
                 continue
             if e.code not in RETRY_STATUSES:
                 raise last_error from None
-        except (urllib.error.URLError, TimeoutError, ConnectionError, json.JSONDecodeError) as e:
+        except json.JSONDecodeError:
+            last_error = NotJobData(
+                "the site answered with a web page instead of job data (usually maintenance)"
+            )
+        except (urllib.error.URLError, TimeoutError, ConnectionError) as e:
             last_error = e
         failures += 1
         time.sleep(2 * failures)

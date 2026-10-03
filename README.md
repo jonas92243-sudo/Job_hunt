@@ -106,10 +106,10 @@ company. Tests: `python -m unittest discover -s tests`.
   `state` branch (newest first): when it ran, how many new postings it saw, how
   many alerts it sent, and any board that failed. 48 rows a day is normal.
 - **Problems.** Discord gets a message only when something is wrong: a company's
-  board fails three scans in a row, a scan does not complete, results cannot be
+  board cannot be read for about six hours, a scan does not complete, results cannot be
   saved, or the scanner had stopped and was restarted. Optional: set
   `daily_heartbeat = true` in `config.toml` for a daily "running" message too.
-- **Broken boards.** If a company's board fails three scans in a row, you get
+- **Broken boards.** If a company's board cannot be read for about six hours, you get
   one warning message. Companies do change job systems occasionally.
 - **Memory.** Seen jobs are stored on the repository's `state` branch. Deleting
   that branch makes the next scan behave like a first scan.
