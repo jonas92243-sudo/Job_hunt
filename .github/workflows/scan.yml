@@ -25,6 +25,7 @@ jobs:
       - name: Scan every 30 minutes
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          DISCORD_STATUS_WEBHOOK_URL: ${{ secrets.DISCORD_STATUS_WEBHOOK_URL }}
           GITHUB_TOKEN: ${{ github.token }}
         run: bash scripts/scan_loop.sh
 

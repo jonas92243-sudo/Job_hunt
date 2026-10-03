@@ -21,7 +21,9 @@ keeps working while your computer is off.
    get unlimited free Actions time.
 3. **Add the secret.** In the repository: Settings > Secrets and variables >
    Actions > New repository secret. Name `DISCORD_WEBHOOK_URL`, value = the URL
-   from step 1.
+   from step 1. Optional: to keep the daily check-in and warning messages out of
+   the job channel, make a second webhook on another channel and save it as a
+   second secret named `DISCORD_STATUS_WEBHOOK_URL`.
 4. **Upload the code.** From this folder:
 
    ```bash
@@ -101,7 +103,10 @@ company. Tests: `python -m unittest discover -s tests`.
 - **Stopping it.** In the Actions tab, open each of the two workflows and choose
   Disable workflow from the "..." menu, then cancel the run in progress.
 - **Daily check-in.** One "scanner is running" message per day around 9 AM
-  Central. If it stops arriving, look at the Actions tab.
+  Central, with the number of scans in the last 24 hours (48 is normal). If it
+  stops arriving, look at the Actions tab. It goes to the
+  `DISCORD_STATUS_WEBHOOK_URL` channel when that secret exists, otherwise to the
+  job channel.
 - **Broken boards.** If a company's board fails three scans in a row, you get
   one warning message. Companies do change job systems occasionally.
 - **Memory.** Seen jobs are stored on the repository's `state` branch. Deleting

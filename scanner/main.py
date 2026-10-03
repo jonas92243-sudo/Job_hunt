@@ -207,6 +207,9 @@ def main(argv=None):
         print("DISCORD_WEBHOOK_URL is not set. Use --dry-run to print alerts instead.")
         return 2
     notifier = Notifier(webhook, dry_run=args.dry_run)
+    # Check-ins and warnings can go to a second channel; they share the main one otherwise.
+    status_webhook = os.environ.get("DISCORD_STATUS_WEBHOOK_URL", "").strip() or webhook
+    status_notifier = Notifier(status_webhook, dry_run=args.dry_run)
 
     state = state_store.load(args.state)
     cstates = {company_key(c): state_store.company_state(state, company_key(c)) for c in companies}
@@ -220,7 +223,7 @@ def main(argv=None):
     for result in results:
         cstate = cstates[result.key]
         name = result.company["name"]
-        track_failures(result, cstate, notifier)
+        track_failures(result, cstate, status_notifier)
         if result.status == "error":
             errors.append(name)
             print(f"{name}: ERROR {result.error}")
@@ -240,9 +243,10 @@ def main(argv=None):
 
     if not args.company:
         record_scan(state, notifier.sent)
-        heartbeat(state, notifier, config, len(companies), errors)
+        heartbeat(state, status_notifier, config, len(companies), errors)
     if not args.no_save:
         state_store.save(args.state, state)
-    print(f"Done. {notifier.sent} message(s) sent, {len(errors)} board(s) failed.")
+    print(f"Done. {notifier.sent} job message(s) and {status_notifier.sent} status message(s) "
+          f"sent, {len(errors)} board(s) failed.")
     # A few failing boards are reported through Discord; only fail the run when all do.
     return 1 if len(errors) == len(companies) else 0
