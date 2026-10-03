@@ -21,12 +21,20 @@ jobs:
       - name: Start the scanner if it is not running
         env:
           GH_TOKEN: ${{ github.token }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
           active=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow scan.yml --limit 20 \
             --json status --jq '[.[] | select(.status != "completed")] | length')
-          if [ "$active" -eq 0 ]; then
-            gh workflow run scan.yml --repo "$GITHUB_REPOSITORY" --ref main
-            echo "The scanner was not running. Started it."
-          else
+          if [ "$active" -ne 0 ]; then
             echo "The scanner is already running."
+            exit 0
+          fi
+          gh workflow run scan.yml --repo "$GITHUB_REPOSITORY" --ref main
+          echo "The scanner was not running. Started it."
+          # On a scheduled check this means the scanner had stopped, which is worth a warning.
+          if [ "$GITHUB_EVENT_NAME" = "schedule" ] && [ -n "$DISCORD_WEBHOOK_URL" ]; then
+            runs="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions"
+            printf '{"content":"\u26a0\ufe0f Job scanner problem: the scanner had stopped and was restarted. Scans may have been missed. Details: <%s>","allowed_mentions":{"parse":[]}}' "$runs" \
+              | curl --silent --show-error --fail -H "Content-Type: application/json" -d @- "$DISCORD_WEBHOOK_URL" > /dev/null \
+              || echo "Could not send the Discord warning."
           fi

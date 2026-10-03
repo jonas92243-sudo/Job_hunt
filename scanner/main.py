@@ -16,6 +16,7 @@ from .notify import Notifier, digest_messages, job_alert
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FAILURE_ALERT_AT = 3    # consecutive failed scans before warning
+RECEIPT_ROWS = 400      # scans kept in the receipts file (about eight days)
 
 
 @dataclass
@@ -142,16 +143,45 @@ def track_failures(result, cstate, notifier):
         cstate["failures"] = 0
 
 
-def record_scan(state, messages_sent):
-    """Remember when each scan ran, so the daily check-in can prove the scanner is alive."""
+def record_scan(state, messages_sent, new_jobs, errors):
+    """Remember what each scan did, for the receipts file and the daily check-in."""
     log = state.setdefault("scan_log", [])
-    log.append([int(time.time()), messages_sent])
-    del log[:-200]
+    log.append([int(time.time()), messages_sent, new_jobs, list(errors)])
+    del log[:-RECEIPT_ROWS]
+
+
+def _zone(config):
+    try:
+        return ZoneInfo(config.get("alerts", {}).get("heartbeat_timezone", "America/Chicago"))
+    except (ZoneInfoNotFoundError, ValueError):
+        return timezone.utc
+
+
+def write_receipts(path, state, config, company_count):
+    """A readable log of every scan, newest first, saved next to the state file."""
+    zone = _zone(config)
+    zone_name = getattr(zone, "key", "UTC")
+    lines = [
+        "# Scan receipts",
+        "",
+        f"One row per scan, newest first. The scanner runs at :00 and :30 and watches "
+        f"{company_count} companies. Times are {zone_name}.",
+        "",
+        "| When | New postings seen | Job alerts sent | Boards that failed |",
+        "| --- | --- | --- | --- |",
+    ]
+    for entry in sorted(state.get("scan_log", []), key=lambda e: e[0], reverse=True):
+        when = datetime.fromtimestamp(entry[0], zone).strftime("%b %d, %I:%M %p").replace(" 0", " ")
+        new_jobs = entry[2] if len(entry) > 2 else "?"
+        failed = ", ".join(entry[3]) if len(entry) > 3 and entry[3] else "none"
+        lines.append(f"| {when} | {new_jobs} | {entry[1]} | {failed} |")
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines) + "\n")
 
 
 def heartbeat(state, notifier, config, company_count, errors):
     alerts = config.get("alerts", {})
-    if not alerts.get("daily_heartbeat", True):
+    if not alerts.get("daily_heartbeat", False):
         return
     now = datetime.now(timezone.utc)
     today = now.date().isoformat()
@@ -161,10 +191,7 @@ def heartbeat(state, notifier, config, company_count, errors):
     day_ago = time.time() - 86400
     recent = [entry for entry in state.get("scan_log", []) if entry[0] >= day_ago]
     sent = sum(entry[1] for entry in recent)
-    try:
-        zone = ZoneInfo(alerts.get("heartbeat_timezone", "America/Chicago"))
-    except (ZoneInfoNotFoundError, ValueError):
-        zone = timezone.utc
+    zone = _zone(config)
     last = datetime.fromtimestamp(max(entry[0] for entry in recent), zone) if recent else None
 
     message = (f"✅ Job scanner is running: {len(recent)} scans in the last 24 hours"
@@ -242,10 +269,13 @@ def main(argv=None):
                 print(f"    - {job.title} | {verdict.reason}")
 
     if not args.company:
-        record_scan(state, notifier.sent)
+        record_scan(state, notifier.sent, sum(r.new for r in results), errors)
         heartbeat(state, status_notifier, config, len(companies), errors)
     if not args.no_save:
         state_store.save(args.state, state)
+        if not args.company:
+            write_receipts(os.path.join(os.path.dirname(args.state), "receipts.md"),
+                           state, config, len(companies))
     print(f"Done. {notifier.sent} job message(s) and {status_notifier.sent} status message(s) "
           f"sent, {len(errors)} board(s) failed.")
     # A few failing boards are reported through Discord; only fail the run when all do.

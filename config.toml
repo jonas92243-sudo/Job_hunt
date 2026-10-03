@@ -60,7 +60,9 @@ workday_max_pages = 75
 baseline_digest = true
 baseline_digest_max = 25   # most jobs listed per company in that first summary
 
-# One "scanner is running" message per day, so silence never means it broke.
-daily_heartbeat = true
+# Every scan is logged to the receipts file on GitHub (receipts.md on the "state"
+# branch). Set this to true to also get one "scanner is running" Discord message
+# per day. Discord always gets a message when a company's board keeps failing.
+daily_heartbeat = false
 heartbeat_hour_utc = 14   # 14:00 UTC is 9 AM Central (daylight time)
-heartbeat_timezone = "America/Chicago"   # time zone used for the "latest scan" time
+heartbeat_timezone = "America/Chicago"   # time zone used in the receipts file

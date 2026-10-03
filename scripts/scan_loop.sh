@@ -32,18 +32,40 @@ save_state() {
   local work
   work="$(mktemp -d)"
   cp state/seen.json "$work/seen.json"
+  [ -s state/receipts.md ] && cp state/receipts.md "$work/receipts.md"
   (
     cd "$work" || exit 1
     git init --quiet --initial-branch=state
     git config user.name "job-scanner"
     git config user.email "job-scanner@users.noreply.github.com"
-    git add seen.json
+    git add .
     git commit --quiet -m "Scan state"
     git push --quiet --force "$REMOTE" state
   )
   local code=$?
   rm -rf "$work"
   return "$code"
+}
+
+# Tell Discord when the scanner itself has a problem, at most once per run.
+report_problem() {
+  echo "PROBLEM: $1"
+  [ -n "${DISCORD_WEBHOOK_URL:-}" ] || return 0
+  [ -f /tmp/problem-reported ] && return 0
+  local url="${GITHUB_SERVER_URL:-https://github.com}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID:-}"
+  MESSAGE="$1" RUN_URL="$url" python3 - <<'PY'
+import json, os, urllib.request
+body = json.dumps({
+    "content": "\u26a0\ufe0f Job scanner problem: " + os.environ["MESSAGE"]
+               + "\nDetails: <" + os.environ["RUN_URL"] + ">",
+    "allowed_mentions": {"parse": []},
+}).encode()
+req = urllib.request.Request(os.environ["DISCORD_WEBHOOK_URL"], data=body,
+                             headers={"Content-Type": "application/json",
+                                      "User-Agent": "me-job-scanner/1.0"})
+urllib.request.urlopen(req, timeout=20)
+PY
+  touch /tmp/problem-reported
 }
 
 # Pick up changes to the company list and settings without restarting.
@@ -74,7 +96,7 @@ main() {
   done
   if [ -z "$last_saved" ]; then
     # Scanning without the saved state would repeat every old alert.
-    echo "Giving up: the scan state is unreachable."
+    report_problem "could not load the list of already-seen jobs, so this run stopped."
     exit 1
   fi
 
@@ -85,8 +107,8 @@ main() {
 
   while true; do
     update_code
-    python3 -m scanner || echo "The scan reported a problem; carrying on."
-    save_state || echo "Could not save the scan state; retrying after the next scan."
+    python3 -m scanner || report_problem "a scan did not complete normally (exit code $?)."
+    save_state || report_problem "the scan results could not be saved to GitHub."
     wait_for_next_slot || break
   done
   echo "Handing over to the next run."

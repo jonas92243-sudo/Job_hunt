@@ -102,11 +102,13 @@ company. Tests: `python -m unittest discover -s tests`.
   next scan; nothing needs restarting.
 - **Stopping it.** In the Actions tab, open each of the two workflows and choose
   Disable workflow from the "..." menu, then cancel the run in progress.
-- **Daily check-in.** One "scanner is running" message per day around 9 AM
-  Central, with the number of scans in the last 24 hours (48 is normal). If it
-  stops arriving, look at the Actions tab. It goes to the
-  `DISCORD_STATUS_WEBHOOK_URL` channel when that secret exists, otherwise to the
-  job channel.
+- **Receipts.** Every scan adds a row to `receipts.md` on the repository's
+  `state` branch (newest first): when it ran, how many new postings it saw, how
+  many alerts it sent, and any board that failed. 48 rows a day is normal.
+- **Problems.** Discord gets a message only when something is wrong: a company's
+  board fails three scans in a row, a scan does not complete, results cannot be
+  saved, or the scanner had stopped and was restarted. Optional: set
+  `daily_heartbeat = true` in `config.toml` for a daily "running" message too.
 - **Broken boards.** If a company's board fails three scans in a row, you get
   one warning message. Companies do change job systems occasionally.
 - **Memory.** Seen jobs are stored on the repository's `state` branch. Deleting
