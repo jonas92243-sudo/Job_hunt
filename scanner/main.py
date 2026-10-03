@@ -2,10 +2,12 @@
 import argparse
 import os
 import sys
+import time
 import tomllib
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from . import state as state_store
 from .ats import READERS
@@ -140,6 +142,13 @@ def track_failures(result, cstate, notifier):
         cstate["failures"] = 0
 
 
+def record_scan(state, messages_sent):
+    """Remember when each scan ran, so the daily check-in can prove the scanner is alive."""
+    log = state.setdefault("scan_log", [])
+    log.append([int(time.time()), messages_sent])
+    del log[:-200]
+
+
 def heartbeat(state, notifier, config, company_count, errors):
     alerts = config.get("alerts", {})
     if not alerts.get("daily_heartbeat", True):
@@ -148,7 +157,19 @@ def heartbeat(state, notifier, config, company_count, errors):
     today = now.date().isoformat()
     if now.hour < alerts.get("heartbeat_hour_utc", 14) or state.get("heartbeat_date") == today:
         return
-    message = f"✅ Job scanner is running. Watching {company_count} companies."
+
+    day_ago = time.time() - 86400
+    recent = [entry for entry in state.get("scan_log", []) if entry[0] >= day_ago]
+    sent = sum(entry[1] for entry in recent)
+    try:
+        zone = ZoneInfo(alerts.get("heartbeat_timezone", "America/Chicago"))
+    except (ZoneInfoNotFoundError, ValueError):
+        zone = timezone.utc
+    last = datetime.fromtimestamp(max(entry[0] for entry in recent), zone) if recent else None
+
+    message = (f"✅ Job scanner is running: {len(recent)} scans in the last 24 hours"
+               + (f", the latest at {last.strftime('%I:%M %p %Z').lstrip('0')}" if last else "")
+               + f". {sent} message(s) sent in that time. Watching {company_count} companies.")
     if errors:
         message += f" Boards failing right now: {', '.join(errors)}."
     if notifier.send(message):
@@ -218,6 +239,7 @@ def main(argv=None):
                 print(f"    - {job.title} | {verdict.reason}")
 
     if not args.company:
+        record_scan(state, notifier.sent)
         heartbeat(state, notifier, config, len(companies), errors)
     if not args.no_save:
         state_store.save(args.state, state)

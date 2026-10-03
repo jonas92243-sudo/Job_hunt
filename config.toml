@@ -63,3 +63,4 @@ baseline_digest_max = 25   # most jobs listed per company in that first summary
 # One "scanner is running" message per day, so silence never means it broke.
 daily_heartbeat = true
 heartbeat_hour_utc = 14   # 14:00 UTC is 9 AM Central (daylight time)
+heartbeat_timezone = "America/Chicago"   # time zone used for the "latest scan" time
