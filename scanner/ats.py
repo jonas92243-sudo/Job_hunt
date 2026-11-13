@@ -11,7 +11,8 @@ import re
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
-from urllib.parse import quote
+from urllib.parse import parse_qs, quote, urlsplit
+from xml.etree import ElementTree
 
 from .http import request_json, request_text
 from .text import html_to_text
@@ -625,8 +626,65 @@ class Google:
         pass
 
 
+# ------------------------------------------------------------------------ Feed
+
+_ATOM = "{http://www.w3.org/2005/Atom}"
+
+
+def parse_feed(text):
+    """Jobs from an Atom or RSS feed, such as a Google Alerts feed.
+
+    A feed carries only a headline, a link and a snippet, so companies read this
+    way are matched on the title alone (match = "title" in companies.toml).
+    """
+    try:
+        root = ElementTree.fromstring(text.encode("utf-8"))
+    except ElementTree.ParseError:
+        raise ValueError("the address did not return a feed") from None
+    entries = root.findall(f"{_ATOM}entry") or root.findall("./channel/item")
+    jobs, seen_ids = [], set()
+    for entry in entries:
+        def field(*names):
+            for name in names:
+                node = entry.find(name)
+                if node is not None and (node.text or "").strip():
+                    return node.text.strip()
+            return ""
+
+        link = entry.find(f"{_ATOM}link")
+        url = (link.get("href") if link is not None else "") or field("link")
+        parts = urlsplit(url)
+        if parts.netloc.endswith("google.com") and parts.path == "/url":
+            # Google Alerts wraps each result in a redirect; keep the real address.
+            url = (parse_qs(parts.query).get("url") or [url])[0]
+        job_id = url.split("?")[0].split("#")[0].rstrip("/")
+        if not job_id or job_id in seen_ids:
+            continue
+        seen_ids.add(job_id)
+        title = html_to_text(field(f"{_ATOM}title", "title")).split(" | ")[0].strip()
+        jobs.append(Job(
+            id=job_id,
+            title=title,
+            url=url,
+            posted=field(f"{_ATOM}published", f"{_ATOM}updated", "pubDate")[:10],
+            description=html_to_text(field(f"{_ATOM}content", f"{_ATOM}summary", "description")),
+        ))
+    return jobs
+
+
+class Feed:
+    """board is the address of an Atom or RSS feed."""
+    name = "feed"
+
+    def list_jobs(self, board, cstate, options):
+        return Listing(parse_feed(request_text(board)))
+
+    def fill_details(self, board, job):
+        pass
+
+
 READERS = {
     r.name: r
     for r in (Greenhouse(), Lever(), Ashby(), Workday(), SmartRecruiters(), Oracle(),
-              Jibe(), ClearCompany(), Radancy(), Gem(), Google())
+              Jibe(), ClearCompany(), Radancy(), Gem(), Google(), Feed())
 }

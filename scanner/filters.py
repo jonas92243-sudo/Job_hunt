@@ -305,6 +305,13 @@ def _has_mechanical_title(title, filters):
     return not keywords or any(word.lower() in lowered for word in keywords)
 
 
+def title_only_verdict(title):
+    """For sources that give no posting text: the title rules already passed, so match."""
+    level = "Entry-level title" if classify_title(title) == "entry" else "Level not stated in title"
+    return Verdict(True, level_note=level,
+                   degree_note="Title check only, posting text not readable")
+
+
 def evaluate(job, filters):
     """Full decision for a job whose description has been loaded."""
     ok, reason = title_prefilter(job.title, filters)

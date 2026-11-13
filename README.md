@@ -64,6 +64,30 @@ Supermicro, Halliburton (SuccessFactors), Lockheed Martin, Eaton, Qualcomm
 (Eightfold), Bell and Textron Aviation (Taleo), Tesla (blocks automated
 access) and Apple (its own site).
 
+### Companies that block direct reading (Tesla)
+
+Tesla's careers site refuses automated requests, so the scanner cannot read it.
+The workaround is a Google Alert delivered as a feed:
+
+1. At google.com/alerts, create an alert for `site:tesla.com/careers terafab`
+   (or any other search). Under Show options set How often to "As-it-happens"
+   and Deliver to "RSS feed".
+2. Copy the address of the feed icon next to the saved alert.
+3. Add it to `companies.toml`:
+
+   ```toml
+   [[company]]
+   name = "Tesla (Terafab)"
+   ats = "feed"
+   board = "https://www.google.com/alerts/feeds/..."
+   match = "title"
+   ```
+
+A feed gives only the job title and link, so `match = "title"` alerts on every
+title that passes the title rules (not senior, not an internship) without
+checking the degree or experience. Alerts arrive when Google notices the
+posting, which can be hours or days after Tesla publishes it.
+
 ## Tuning what alerts
 
 All settings are in `config.toml`, each with a note explaining it. The ones

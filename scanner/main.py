@@ -12,7 +12,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from . import state as state_store
 from .ats import READERS
 from .http import NotJobData
-from .filters import evaluate, is_us_location, title_prefilter
+from .filters import evaluate, is_us_location, title_only_verdict, title_prefilter
 from .notify import Notifier, digest_messages, job_alert
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -98,7 +98,10 @@ def scan_company(company, cstate, config):
             result.complete = False
             print(f"  [{company['name']}] could not load '{job.title}': {future.exception()}")
             continue
-        verdict = evaluate(job, filters)
+        if company.get("match") == "title":
+            verdict = title_only_verdict(job.title)
+        else:
+            verdict = evaluate(job, filters)
         if verdict.match:
             result.matches.append((job, verdict))
         else:

@@ -4,9 +4,10 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from scanner.ats import Job  # noqa: E402
+from scanner.ats import Job, parse_feed  # noqa: E402
 from scanner.filters import (  # noqa: E402
-    classify_title, degree_check, evaluate, is_us_location, required_years, title_prefilter,
+    classify_title, degree_check, evaluate, is_us_location, required_years, title_only_verdict,
+    title_prefilter,
 )
 from scanner.text import html_to_text  # noqa: E402
 
@@ -195,6 +196,58 @@ class EvaluateTests(unittest.TestCase):
         self.assertIn("unclear", v.level_note)
         strict = dict(FILTERS, include_unclear_level=False)
         self.assertFalse(evaluate(job("Mechanical Engineer", ME_DEGREE), strict).match)
+
+
+FEED = """<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:idx="urn:atom-extension:indexing">
+<id>tag:google.com,2005:reader/user/1/state/com.google/alerts/2</id>
+<title>Google Alert - terafab</title>
+<entry>
+<id>tag:google.com,2013:googlealerts/feed:111</id>
+<title type="html">Mechanical Engineer, Tool Hookup, &lt;b&gt;Terafab&lt;/b&gt; | Tesla Careers</title>
+<link href="https://www.google.com/url?rct=j&amp;sa=t&amp;url=https://www.tesla.com/careers/search/job/mechanical-engineer-tool-hookup-terafab-280847&amp;ct=ga&amp;usg=abc"/>
+<published>2026-11-13T10:00:00Z</published>
+<content type="html">Design and install &lt;b&gt;tool&lt;/b&gt; hookups.</content>
+</entry>
+<entry>
+<id>tag:google.com,2013:googlealerts/feed:222</id>
+<title type="html">Mechanical Engineer, Tool Hookup, Terafab</title>
+<link href="https://www.tesla.com/careers/search/job/mechanical-engineer-tool-hookup-terafab-280847?source=x"/>
+<published>2026-11-14T10:00:00Z</published>
+</entry>
+<entry>
+<id>tag:google.com,2013:googlealerts/feed:333</id>
+<title type="html">Sr. Process Engineer, Dry Etch, Terafab | Tesla Careers</title>
+<link href="https://www.google.com/url?rct=j&amp;url=https://www.tesla.com/careers/search/job/sr-process-engineer-dry-etch-terafab-267829&amp;ct=ga"/>
+<published>2026-11-13T11:00:00Z</published>
+</entry>
+</feed>"""
+
+
+class FeedTests(unittest.TestCase):
+    def test_google_alert_feed(self):
+        jobs = parse_feed(FEED)
+        self.assertEqual(len(jobs), 2)   # the same posting listed twice counts once
+        first = jobs[0]
+        self.assertEqual(first.title, "Mechanical Engineer, Tool Hookup, Terafab")
+        self.assertEqual(
+            first.url,
+            "https://www.tesla.com/careers/search/job/mechanical-engineer-tool-hookup-terafab-280847",
+        )
+        self.assertEqual(first.posted, "2026-11-13")
+        self.assertEqual(first.description, "Design and install tool hookups.")
+
+    def test_empty_and_broken_feeds(self):
+        self.assertEqual(parse_feed('<feed xmlns="http://www.w3.org/2005/Atom"></feed>'), [])
+        with self.assertRaises(ValueError):
+            parse_feed("<!DOCTYPE html><html><body>Sign in</body></html")
+
+    def test_title_only_matching(self):
+        jobs = parse_feed(FEED)
+        self.assertTrue(title_prefilter(jobs[0].title, FILTERS)[0])
+        self.assertFalse(title_prefilter(jobs[1].title, FILTERS)[0])   # senior title
+        self.assertIn("Level not stated", title_only_verdict(jobs[0].title).level_note)
+        self.assertIn("Entry-level", title_only_verdict("Equipment Engineer I, Terafab").level_note)
 
 
 class TextTests(unittest.TestCase):
