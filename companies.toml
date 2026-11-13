@@ -76,8 +76,8 @@ board = "axiomspace/wd5/External_Career_Site"
 
 [[company]]
 name = "Firefly Aerospace"
-ats = "clearcompany"
-board = "firefly"
+ats = "workday"
+board = "fireflyspace/wd115/Firefly"
 
 [[company]]
 name = "Vantor"
