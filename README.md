@@ -57,7 +57,8 @@ You can also edit `companies.toml` directly on github.com. To stop watching a
 company, delete its block.
 
 Supported job systems: Greenhouse, Lever, Ashby, Workday, SmartRecruiters,
-Oracle, ClearCompany, and career sites built on Jibe (iCIMS) or Radancy.
+Oracle, ClearCompany, Gem, career sites built on Jibe (iCIMS) or Radancy, and
+Google's own careers site (by search phrase).
 Companies on other systems cannot be scanned yet. Known examples: Celestica,
 Supermicro, Halliburton (SuccessFactors), Lockheed Martin, Eaton, Qualcomm
 (Eightfold), Bell and Textron Aviation (Taleo), Tesla (blocks automated

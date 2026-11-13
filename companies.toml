@@ -167,16 +167,6 @@ ats = "workday"
 board = "boeing/wd1/EXTERNAL_CAREERS"
 
 [[company]]
-name = "Northrop Grumman"
-ats = "workday"
-board = "ngc/wd1/Northrop_Grumman_External_Site"
-
-[[company]]
-name = "RTX (Raytheon, Collins Aerospace, Pratt & Whitney)"
-ats = "workday"
-board = "globalhr/wd5/REC_RTX_Ext_Gateway"
-
-[[company]]
 name = "GE Aerospace"
 ats = "workday"
 board = "geaerospace/wd5/GE_ExternalSite"
@@ -263,6 +253,35 @@ name = "AMD"
 ats = "jibe"
 board = "careers.amd.com"
 
+[[company]]
+name = "Groq"
+ats = "gem"
+board = "groq"
+
+[[company]]
+name = "Tenstorrent"
+ats = "greenhouse"
+board = "tenstorrent"
+
+[[company]]
+name = "SambaNova"
+ats = "greenhouse"
+board = "sambanovasystems"
+
+# ---------------------------------------------- Google's Project Suncatcher
+
+# Google's careers site is read by search phrase: board is what to search for.
+[[company]]
+name = "Google (Project Suncatcher)"
+ats = "google"
+board = "suncatcher"
+
+# Planet builds the Suncatcher satellites with Google.
+[[company]]
+name = "Planet"
+ats = "greenhouse"
+board = "planetlabs"
+
 # ----------------------------------------------------------------------- other
 
 [[company]]
@@ -271,11 +290,6 @@ ats = "oracle"
 board = "hdjq.fa.us2.oraclecloud.com/CX_1"
 
 # -------------------------------------------------------------------- vehicles
-
-[[company]]
-name = "Ford"
-ats = "oracle"
-board = "efds.fa.em5.oraclecloud.com/CX_1"
 
 [[company]]
 name = "General Motors"

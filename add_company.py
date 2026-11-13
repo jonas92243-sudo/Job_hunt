@@ -28,6 +28,7 @@ URL_PATTERNS = [
     ("ashby", re.compile(r"jobs\.ashbyhq\.com/([\w.%-]+)", re.I)),
     ("smartrecruiters", re.compile(r"(?:jobs|careers)\.smartrecruiters\.com/([\w-]+)", re.I)),
     ("clearcompany", re.compile(r"([\w-]+)\.hrmdirect\.com", re.I)),
+    ("gem", re.compile(r"jobs\.gem\.com/([\w-]+)", re.I)),
 ]
 WORKDAY_URL = re.compile(
     r"([\w-]+)\.(wd\d+)\.myworkdayjobs\.com/(?:[a-z]{2}-[A-Z]{2}/)?([\w-]+)", re.I

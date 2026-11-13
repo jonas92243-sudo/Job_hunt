@@ -537,8 +537,96 @@ class Radancy:
         raise ValueError(f"no description found for job {job.id}")
 
 
+# ------------------------------------------------------------------------- Gem
+
+class Gem:
+    """board is the name in the company's jobs.gem.com address, for example 'groq'."""
+    name = "gem"
+
+    def list_jobs(self, board, cstate, options):
+        data = request_json(f"https://api.gem.com/job_board/v0/{quote(board)}/job_posts/").data
+        jobs = []
+        for j in data or []:
+            places = [((o.get("location") or {}).get("name") or o.get("name") or "")
+                      for o in j.get("offices") or []]
+            if not any(places):
+                places = [(j.get("location") or {}).get("name") or ""]
+            jobs.append(Job(
+                id=str(j["id"]),
+                title=(j.get("title") or "").strip(),
+                url=j.get("absolute_url") or f"https://jobs.gem.com/{board}/{j['id']}",
+                location="; ".join(dict.fromkeys(p for p in places if p)),
+                employment_type=(j.get("employment_type") or "").replace("_", " "),
+                posted=(j.get("first_published_at") or j.get("created_at") or "")[:10],
+                description=j.get("content_plain") or html_to_text(j.get("content")),
+            ))
+        return Listing(jobs)
+
+    def fill_details(self, board, job):
+        pass
+
+
+# ---------------------------------------------------------------------- Google
+
+class Google:
+    """Google's own careers site. board is a search phrase, for example 'suncatcher';
+    every posting that search returns is checked. The job data is embedded in the page.
+    """
+    name = "google"
+    PAGES = 10
+    _DATA = re.compile(
+        r"AF_initDataCallback\(\{key: 'ds:\d+', hash: '\d+', data:(.*?), sideChannel: \{\}\}\);</script>",
+        re.S,
+    )
+
+    @staticmethod
+    def _text(field):
+        return html_to_text(field[1]) if isinstance(field, list) and len(field) > 1 else ""
+
+    def _page(self, board, page, us_only):
+        url = (f"https://www.google.com/about/careers/applications/jobs/results"
+               f"?q={quote(board)}&page={page}")
+        if us_only:
+            url += "&location=United%20States"
+        for block in self._DATA.findall(request_text(url)):
+            try:
+                data = json.loads(block)
+            except json.JSONDecodeError:
+                continue
+            # The job list is the block shaped [rows, _, total, page size].
+            if isinstance(data, list) and len(data) >= 4 and isinstance(data[2], int):
+                return data[0] or [], data[2], data[3] or 20
+        raise ValueError("Google's careers page did not contain job data")
+
+    def list_jobs(self, board, cstate, options):
+        jobs, page = [], 1
+        while True:
+            rows, total, size = self._page(board, page, options.get("us_only", True))
+            for r in rows:
+                places = r[9] or []
+                slug = re.sub(r"[^a-z0-9]+", "-", r[1].lower()).strip("-")
+                posted = r[12][0] if isinstance(r[12], list) and r[12] else None
+                jobs.append(Job(
+                    id=str(r[0]),
+                    title=(r[1] or "").strip(),
+                    url=f"https://www.google.com/about/careers/applications/jobs/results/{r[0]}-{slug}",
+                    location="; ".join(p[0] for p in places if p and p[0]),
+                    country="US" if any(len(p) > 5 and p[5] == "US" for p in places) else "",
+                    posted=time.strftime("%Y-%m-%d", time.gmtime(posted)) if posted else "",
+                    description="\n".join(x for x in (self._text(r[10]), self._text(r[3]),
+                                                      self._text(r[4])) if x),
+                ))
+            if not rows or page * size >= total or page >= self.PAGES:
+                break
+            page += 1
+        return Listing(jobs)
+
+    def fill_details(self, board, job):
+        pass
+
+
 READERS = {
     r.name: r
     for r in (Greenhouse(), Lever(), Ashby(), Workday(), SmartRecruiters(), Oracle(),
-              Jibe(), ClearCompany(), Radancy())
+              Jibe(), ClearCompany(), Radancy(), Gem(), Google())
 }
