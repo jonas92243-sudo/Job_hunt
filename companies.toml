@@ -282,6 +282,17 @@ name = "Planet"
 ats = "greenhouse"
 board = "planetlabs"
 
+# ------------------------------------------------------------ Terafab (Tesla)
+
+# Tesla's careers site blocks direct reading, so this is a Google Alerts feed for
+# "site:tesla.com/careers terafab". Feeds carry only titles, hence match = "title".
+# (SpaceX's Terafab roles are on the SpaceX board above.)
+[[company]]
+name = "Tesla (Terafab)"
+ats = "feed"
+board = "https://www.google.com/alerts/feeds/00447754878994413414/11598646932960104534"
+match = "title"
+
 # ----------------------------------------------------------------------- other
 
 [[company]]
